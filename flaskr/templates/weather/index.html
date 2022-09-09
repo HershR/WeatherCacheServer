@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Cities{% endblock %}</h1>
+  <a class="action" href="{{ url_for('weather.add') }}" >Add City</a>
+{% endblock %}
+
+{% block content %}
+
+  {% for city in cites %}
+    <article class="cites">
+      <header>
+        <div>
+          <h1>{{ city['city_name'] , city['city_country'] , city['city_coord_lat'] , city['city_coord_long'] }}</h1>
+        </div>
+      </header>
+    </article>
+    {% if not loop.last %}
+      <hr>
+    {% endif %}
+  {% endfor %}
+{% endblock %}

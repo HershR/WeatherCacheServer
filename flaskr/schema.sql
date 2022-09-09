@@ -11,12 +11,9 @@ CREATE TABLE owm_cities (
   city_country TEXT NOT NULL
 );
 
-/* time in UTC */
-
 CREATE TABLE owm_current_weather (
-  timestamp INTEGER DEFAULT unixepoch(),
+  timestamp INTEGER DEFAULT (unixepoch()),
   city_id INTEGER NOT NULL,
-  FOREIGN KEY (city_id) REFERENCES owm_cities (city_id)
   city_sun_rise INTEGER NOT NULL,
   city_sun_set INTEGER NOT NULL,
   timezone TEXT NOT NULL,
@@ -44,15 +41,14 @@ CREATE TABLE owm_current_weather (
   weather_number INTEGER NOT NULL,
   weather_value INTEGER NOT NULL,
   weather_icon TEXT NOT NULL,
-  lastupdate_value TEXT NOT NULL
-
+  lastupdate_value TEXT NOT NULL,
+  FOREIGN KEY (city_id) REFERENCES owm_cities (city_id)
 );
 
 CREATE TABLE owm_hourly_weather_forecast (
-  request_timestamp TEXT DEFAULT unixepoch(),
-  forecast_timestamp TEXT DEFAULT unixepoch(),
+  request_timestamp INTEGER DEFAULT (unixepoch()),
+  forecast_timestamp INTEGER DEFAULT (unixepoch()),
   city_id INTEGER NOT NULL,
-  FOREIGN KEY (city_id) REFERENCES owm_cities (city_id)
   city_sun_rise INTEGER NOT NULL,
   city_sun_set INTEGER NOT NULL,
   timezone TEXT NOT NULL,
@@ -80,6 +76,6 @@ CREATE TABLE owm_hourly_weather_forecast (
   weather_number INTEGER NOT NULL,
   weather_value INTEGER NOT NULL,
   weather_icon TEXT NOT NULL,
-  lastupdate_value TEXT NOT NULL
-
+  lastupdate_value TEXT NOT NULL,
+  FOREIGN KEY (city_id) REFERENCES owm_cities (city_id)
 );

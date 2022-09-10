@@ -1,9 +1,7 @@
 {% extends 'base.html' %}
 
 {% block header %}
-  <h1>{% block title %}Add City to Track{% endblock %}</h1>
-
-
+  <h1>{% block title %}Add City To Track{% endblock %}</h1>
 {% endblock %}
 
 {% block content %}
@@ -21,3 +19,5 @@
       <hr>
     {% endif %}
   {% endfor %}
+  <a class="action" href="{{ url_for('cityTable.index') }}">Back</a>
+{% endblock %}

@@ -2,13 +2,11 @@
 
 {% block header %}
   <h1>{% block title %}Cities{% endblock %}</h1>
-
-
 {% endblock %}
 
 {% block content %}
 <h1>City Name, Country, Coordinates</h1>
-<a class="action" href="{{ url_for('cityTable.add') }}" >Add City</a>
+<a class="action" href="{{ url_for('cityTable.search') }}" >Add City</a>
   {% for city in cities %}
     <article class="cites">
       <header>

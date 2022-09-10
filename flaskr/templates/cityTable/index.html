@@ -2,16 +2,19 @@
 
 {% block header %}
   <h1>{% block title %}Cities{% endblock %}</h1>
-  <a class="action" href="{{ url_for('weather.add') }}" >Add City</a>
+
+
 {% endblock %}
 
 {% block content %}
-
-  {% for city in cites %}
+<h1>City Name, Country, Coordinates</h1>
+<a class="action" href="{{ url_for('cityTable.add') }}" >Add City</a>
+  {% for city in cities %}
     <article class="cites">
       <header>
         <div>
           <h1>{{ city['city_name'] , city['city_country'] , city['city_coord_lat'] , city['city_coord_long'] }}</h1>
+          <a class="action" href="{{ url_for('cityTable.current_weather', id=city['city_id']) }}">Current Weather</a>
         </div>
       </header>
     </article>

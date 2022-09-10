@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Add City to Track{% endblock %}</h1>
+
+
+{% endblock %}
+
+{% block content %}
+<h1>City Name, State, Country</h1>
+  {% for city in cities %}
+    <article class="cites">
+      <header>
+        <div>
+          <h1>{{ city }}</h1>
+          <a class="action" href="{{ url_for('cityTable.index', data=city) }}">Add</a>
+        </div>
+      </header>
+    </article>
+    {% if not loop.last %}
+      <hr>
+    {% endif %}
+  {% endfor %}

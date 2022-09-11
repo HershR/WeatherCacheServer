@@ -1,16 +1,23 @@
 {% extends 'base.html' %}
 
 {% block header %}
-  <h1>{% block title %}Add City{% endblock %}</h1>
+  <h1>{% block title %}Add City To Track{% endblock %}</h1>
 {% endblock %}
 
 {% block content %}
-  <form method="post">
-    <label for="coordinate">coordinate format: (latitude,longitude)</label>
-    <input name="coordinate" id="coordinate" required>
-    <input type="submit" value="Submit">
-  </form>
-  <form action="{{ url_for('cityTable.index') }}" method="get">
-    <input class="return" type="submit" value="Cancel">
-  </form>
+<h1>City Name, State, Country</h1>
+  {% for city in cities %}
+    <article class="cites">
+      <header>
+        <div>
+          <h1>{{ city['name'] , city['state'], city['country'] }} {{city['lat'] , city['lon']}}</h1>
+          <a class="action" href="{{ url_for('cityTable.add', city=city) }}">Add</a>
+        </div>
+      </header>
+    </article>
+    {% if not loop.last %}
+      <hr>
+    {% endif %}
+  {% endfor %}
+  <a class="action" href="{{ url_for('cityTable.index') }}">Back</a>
 {% endblock %}

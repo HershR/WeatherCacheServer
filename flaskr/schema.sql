@@ -4,7 +4,7 @@ DROP TABLE IF EXISTS owm_current_weather;
 DROP TABLE IF EXISTS owm_hourly_weather_forecast;
 
 CREATE TABLE owm_cities (
-  city_id INTEGER PRIMARY KEY,
+  city_id INTEGER PRIMARY KEY AUTOINCREMENT,
   city_name TEXT NOT NULL,
   city_coord_long REAL NOT NULL,
   city_coord_lat REAL NOT NULL,

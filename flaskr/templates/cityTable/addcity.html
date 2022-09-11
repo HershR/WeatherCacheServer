@@ -6,12 +6,16 @@
 
 {% block content %}
 <h1>City Name, State, Country</h1>
+<form method="post" action="{{ url_for('cityTable.add')}}" class="inline">
   {% for city in cities %}
     <article class="cites">
       <header>
         <div>
-          <h1>{{ city }}</h1>
-          <a class="action" href="{{ url_for('cityTable.index', data=city) }}">Add</a>
+          <h1>{{ city['name'] , city['state'], city['country'] }} {{city['lat'] , city['lon']}}</h1>
+          <input type="hidden" name="city" value= "{{ city }}">
+          <input type="submit" value="Submit">
+
+          <!--<a class="action" href="{{ url_for('cityTable.index', city=city) }}">Add</a>-->
         </div>
       </header>
     </article>
@@ -19,5 +23,6 @@
       <hr>
     {% endif %}
   {% endfor %}
+</form>
   <a class="action" href="{{ url_for('cityTable.index') }}">Back</a>
 {% endblock %}

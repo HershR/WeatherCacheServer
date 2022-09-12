@@ -1,6 +1,9 @@
 import os
 import json
 import requests
+from datetime import timezone
+import datetime
+
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, url_for
 )
@@ -81,55 +84,98 @@ def add(city=None):
         error += ' missing lat'
     if not longitude:
         error += ' missing long'
-    #print(error)
     if error is None:
+        db = get_db()
+        db.execute(
+            'INSERT INTO owm_cities (city_name, city_coord_long, city_coord_lat, city_country)'
+            ' VALUES (?, ?, ?, ?)',
+            (name, longitude, latitude, country)
+        )
+        db.commit()
+        return redirect(url_for('cityTable.index'))
 
-        url = "https://api.openweathermap.org/data/3.0/onecall?lat={lat}&lon={lon}&exclude={part}&appid={key}" \
-            .format(lat=latitude, lon=longitude, part="hourly,minutely,daily,alerts", key=os.environ.get("OPENWEATHER_API_KEY"))
-        r = requests.get(url)
-        if r.status_code == 200:
-            data = r.json()
-            db = get_db()
-            db.execute(
-                'INSERT INTO owm_cities (city_name, city_coord_long, city_coord_lat, city_country)'
-                ' VALUES (?, ?, ?, ?)',
-                (name, longitude, latitude, country)
-            )
-
-            db.commit()
-            #print('added city')
-            return redirect(url_for('cityTable.index'))
-        else:
-            print('status code not 200')
-            error = 'Request Error'
-    if error is not None:
-        #print('error flash')
+    else:
         flash(error)
     return redirect(url_for('cityTable.search'))
 
-@bp.route('/updatecurrent/<int:city_id>', methods=('GET', 'POST'))
+
+@bp.route('/delete/<int:city_id>', methods=('GET', 'POST'))
+def delete(city_id=None):
+    return
+
+
 def update_current_weather(city_id):
     db = get_db()
-    city = db.execute
-    (
-        'SELECT * FROM owm_cities WHERE city_id = ?', (city_id,)
+    city = db.execute(
+        'SELECT * FROM owm_cities'
+        ' WHERE city_id = ?',
+        (city_id,)
     ).fetchone()
     error = None
     if city is None:
         error = 'city not currently tracked'
-    latitude = city['city_coord_lat']
-    longitude = city['city_coord_long']
+    else:
+        latitude = city['city_coord_lat']
+        longitude = city['city_coord_long']
+        #dt = datetime.now(timezone.utc)
+        # check if city's current weather has
+        # already been updated this hour
+        #exist = db.execute(
+        #    'SELECT * FROM own_current_weather '
+        #    'WHERE city_id = ? WHERE BETWEEN timestamp = ?',
+        #    (city_id, longitude)
+        #).fetchone()
 
+        exclude = "hourly,minutely,daily,alerts"
 
-def update_current_weather(latitude, longitude):
-    db = get_db()
-    id = db.execute
-    (
+        url = "https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={key}" \
+            .format(lat=latitude, lon=longitude,
+                    key=os.environ.get("OPENWEATHER_API_KEY"))
+        r = requests.get(url)
+        if r.status_code == 200:
+            data = r.json()
 
-    )
-    return
+            # some data is unavailable in api call, ex wind_speed name, clouds
+            # will update incorrect fields at later time
+            #pprint(data)
+            db.execute(
+                "INSERT INTO owm_current_weather "
+                "(city_id, city_sun_rise, city_sun_set, timezone, lastupdate_value,"
+                "temperature_value, temperature_min, temperature_max, feels_like_value,"
+                "humidity_value, pressure_value,"
+                "wind_speed_value, wind_speed_name, wind_direction_value, wind_direction_code, wind_direction_name,"
+                "clouds_value, clouds_name, visibility_value, precipitation_value,"
+                "weather_number, weather_value, weather_icon)"
+                "VALUES (? , ? , ? , ? , ?,"
+                "? , ? , ? , ? ,"
+                "? , ? ,"
+                "? , ? , ? , ? , ?,"
+                "? , ? , ? , ? ,"
+                "? , ? , ?)",
+                (city_id, data['sys']['sunrise'], data['sys']['sunset'], data['timezone'], data['dt'],
+                 data['main']['temp'], data['main']['temp_min'], data['main']['temp_max'], data['main']['feels_like'],
+                 data['main']['humidity'], data['main']['pressure'],
+                 data['wind']['speed'], data['wind']['speed'], data['wind']['deg'], data['wind']['deg'], data['wind']['deg'],
+                 data['clouds']['all'], data['clouds']['all'], data['visibility'], data['cod'],
+                 data['id'], data['id'], data['id']
+
+                 )
+            )
+            db.commit()
+
+            return data
+    return error
+
 
 @bp.route('/weather/<int:id>', methods=('GET', 'POST'))
 def current_weather(id):
+    update_current_weather(id)
     db = get_db()
-    return render_template('cityTable/currentweather.html')
+
+    data = db.execute(
+        'SELECT *'
+        ' FROM owm_cities c'
+        ' JOIN owm_current_weather w ON c.city_id = w.city_id'
+    ).fetchall()
+    return render_template('cityTable/currentweather.html', data=data)
+

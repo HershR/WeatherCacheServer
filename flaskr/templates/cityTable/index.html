@@ -11,8 +11,11 @@
     <article class="cites">
       <header>
         <div>
-          <h1>{{ city['city_name'] , city['city_country'] , city['city_coord_lat'] , city['city_coord_long'] }}</h1>
+          <h1>{{ city['city_name'] , city['city_country'] }}</h1>
+          <h1> {{ city['city_coord_lat'] , city['city_coord_long'] }}</h1>
           <a class="action" href="{{ url_for('cityTable.current_weather', id=city['city_id']) }}">Current Weather</a>
+          <!--<a class="action" href="{{ url_for('cityTable.delete', city_id=city['city_id']) }}">Delete</a>-->
+
         </div>
       </header>
     </article>

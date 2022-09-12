@@ -12,7 +12,7 @@ CREATE TABLE owm_cities (
 );
 
 CREATE TABLE owm_current_weather (
-  timestamp INTEGER DEFAULT (unixepoch()),
+  timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
   city_id INTEGER NOT NULL,
   city_sun_rise INTEGER NOT NULL,
   city_sun_set INTEGER NOT NULL,
@@ -22,9 +22,9 @@ CREATE TABLE owm_current_weather (
   temperature_max REAL NOT NULL,
   temperature_unit TEXT DEFAULT "K", --default Kelvin
   feels_like_value REAL NOT NULL,
-  feels_like_unit REAL NOT NULL,
+  feels_like_unit REAL DEFAULT "K",
   humidity_value INTEGER NOT NULL,
-  humidity_unit TEXT NOT NULL,
+  humidity_unit TEXT DEFAULT "%",
   pressure_value INTEGER NOT NULL,
   pressure_unit TEXT DEFAULT "hPa", --default hPa
   wind_speed_value REAL NOT NULL,
@@ -46,8 +46,8 @@ CREATE TABLE owm_current_weather (
 );
 
 CREATE TABLE owm_hourly_weather_forecast (
-  request_timestamp INTEGER DEFAULT (unixepoch()),
-  forecast_timestamp INTEGER DEFAULT (unixepoch()),
+  request_timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
+  forecast_timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
   city_id INTEGER NOT NULL,
   city_sun_rise INTEGER NOT NULL,
   city_sun_set INTEGER NOT NULL,

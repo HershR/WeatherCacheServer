@@ -21,6 +21,9 @@ def create_app(test_config=None):
     from . import db
     db.init_app(app)
 
+    from . import weather
+    app.register_blueprint(weather.bp)
+
     from . import cityTable
     app.register_blueprint(cityTable.bp)
     app.add_url_rule('/', endpoint='index')

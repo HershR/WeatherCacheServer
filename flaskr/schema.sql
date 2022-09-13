@@ -12,7 +12,7 @@ CREATE TABLE owm_cities (
 );
 
 CREATE TABLE owm_current_weather (
-  timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
+  timestamp INT DEFAULT (cast(strftime('%s','now') as int)),
   city_id INTEGER NOT NULL,
   city_sun_rise INTEGER NOT NULL,
   city_sun_set INTEGER NOT NULL,
@@ -41,7 +41,7 @@ CREATE TABLE owm_current_weather (
   weather_number INTEGER NOT NULL,
   weather_value INTEGER NOT NULL,
   weather_icon TEXT NOT NULL,
-  lastupdate_value TEXT NOT NULL,
+  lastupdate_value INT NOT NULL,
   FOREIGN KEY (city_id) REFERENCES owm_cities (city_id)
 );
 

@@ -5,14 +5,15 @@
 {% endblock %}
 
 {% block content %}
+<h1>{{ data[0]['city_name'] }}, {{ data[0]['city_country'] }}</h1>
   {% for d in data %}
     <article class="weather data">
       <header>
         <div>
-          <div class="about">{{ d['city_name'] }}, {{ d['city_country'] }}, {{ d['timestamp'] }}  </div>
+          <div class="about">Last Updated: {{ d['lastupdate_value']}}  </div>
         </div>
       </header>
-      <p class="body">{{ d['temperature_value'] }}</p>
+      <p class="body">Temperature: {{ d['temperature_value'] }}, Max Temp: {{ d['temperature_max'] }}, Min Temp: {{ d['temperature_min'] }}</p>
     </article>
     {% if not loop.last %}
       <hr>

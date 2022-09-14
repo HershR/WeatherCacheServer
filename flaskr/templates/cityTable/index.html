@@ -6,7 +6,7 @@
 
 {% block content %}
 <h1>City Name, Country, Coordinates</h1>
-<a class="action" href="{{ url_for('cityTable.search') }}" >Add City</a>
+<a class="action" href="{{ url_for('cityTable.search_by_coordinates') }}" >Add City</a>
   {% for city in cities %}
     <article class="cites">
       <header>
@@ -14,6 +14,7 @@
           <h1>{{ city['city_name'] , city['city_country'] }}</h1>
           <h1> {{ city['city_coord_lat'] , city['city_coord_long'] }}</h1>
           <a class="action" href="{{ url_for('weather.current_weather', id=city['city_id']) }}">Current Weather</a>
+          <a class="action" href="{{ url_for('weather.current_forecast', id=city['city_id']) }}">Current Forecast</a>
           <a class="action" href="{{ url_for('weather.current_weather_dump', id=city['city_id']) }}">Current Weather Dump</a>
         </div>
       </header>

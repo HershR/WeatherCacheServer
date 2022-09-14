@@ -10,12 +10,12 @@
     <article class="weather data">
       <header>
         <div>
-          <div class="about">Last Updated: {{ d['lastupdate_value']}}  </div>
+          <div class="about">Last Updated: {{ d['lastupdate_value_f']}}  </div>
         </div>
       </header>
       <p class="body">Temperature: {{ d['temperature_value'] }}, Max Temp: {{ d['temperature_max'] }}, Min Temp: {{ d['temperature_min'] }}</p>
       <div>
-          <div class="about">Timestamp(unix): {{ d['timestamp']}}  </div>
+          <div class="about">Timestamp(unix): {{ d['timestamp_f']}}  </div>
         </div>
     </article>
     {% if not loop.last %}

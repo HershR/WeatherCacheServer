@@ -14,6 +14,9 @@
         </div>
       </header>
       <p class="body">Temperature: {{ d['temperature_value'] }}, Max Temp: {{ d['temperature_max'] }}, Min Temp: {{ d['temperature_min'] }}</p>
+      <div>
+          <div class="about">Timestamp(unix): {{ d['timestamp']}}  </div>
+        </div>
     </article>
     {% if not loop.last %}
       <hr>

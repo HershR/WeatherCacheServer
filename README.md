@@ -1,6 +1,6 @@
 # WeatherCacheApp
  Flask server that tracks the weather of cities
+ Uses Open Weather Api https://openweathermap.org/
+ 
 
-Required Packages: 
-    flask,
-    pyowm
+Required Packages in requirements.txt

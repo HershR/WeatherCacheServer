@@ -1,3 +1,8 @@
+# Hersh Rudrawal
+# cityTable.py
+# Can search for cites.
+# And display currently tracked cities
+
 import os
 import json
 import requests

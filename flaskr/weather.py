@@ -1,3 +1,11 @@
+# Hersh Rudrawal
+# weather.py
+# Contains functions required to update
+# the database with weather data
+# Also contains the page routes to display
+# the data in db
+# note: not all inserted field contains correct values,
+
 import os
 import json
 import requests
@@ -18,7 +26,12 @@ from flaskr.db import get_db
 
 bp = Blueprint('weather', __name__)
 
+# Add your own Open Weather Api Key here
+owm_api_key = os.environ.get("OPENWEATHER_API_KEY")
 
+# will get update owm_current_weather table
+# with the current weather forecast for a given city
+# able to call with free api key
 def update_current_weather(city_id):
     db = get_db()
     city = db.execute(
@@ -47,9 +60,10 @@ def update_current_weather(city_id):
             (city_id, timestamp, (timestamp+360),)
         ).fetchone()
         if updated is not None:
-            error = 'city has already been updated for current hour'
+            #city has already been updated for current hour
+            return
         else:
-            url = "https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={key}".format(lat=latitude, lon=longitude, key=os.environ.get("OPENWEATHER_API_KEY"))
+            url = "https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={key}".format(lat=latitude, lon=longitude, key=owm_api_key)
             r = requests.get(url)
             if r.status_code == 200:
                 data = r.json()
@@ -80,10 +94,13 @@ def update_current_weather(city_id):
                      )
                 )
                 db.commit()
+            else:
+                error = 'failed to connect to Open Weather API'
     return error
 
 
 # get today and tomorrow's forcast
+# free api key allows for only 3 hour interval
 def update_forcast_3h(city_id):
     error = None
     db = get_db()
@@ -104,7 +121,7 @@ def update_forcast_3h(city_id):
     if latitude is None or longitude is None:
         error = 'coordinated missing for city: ' + str(city_id)
 
-    url = 'http://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&cnt={count}&appid={key}'.format(lat=latitude, lon=longitude, count = 15, key=os.environ.get("OPENWEATHER_API_KEY"))
+    url = 'http://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&cnt={count}&appid={key}'.format(lat=latitude, lon=longitude, count = 15, key=owm_api_key)
     r = requests.get(url)
     if r.status_code == 200:
         data = r.json()
@@ -167,6 +184,8 @@ def update_forcast_3h(city_id):
                 error = 'duplicate rows found'
                 return error
         db.commit()
+    else:
+        error = 'failed to connect to Open Weather API'
     return error
 
 # get 5 days with hourly data
@@ -213,7 +232,7 @@ def update_history(city_id):
             if t >= len(timestamps):
                 # no more db timestamps to check, fill db with remaining hours
                 url = 'https://api.openweathermap.org/data/2.5/onecall/timemachine?lat={lat}&lon={lon}&dt={time}&appid={key}'.format(
-                    lat=latitude, lon=longitude, time=hour, key=os.environ.get("OPENWEATHER_API_KEY"))
+                    lat=latitude, lon=longitude, time=hour, key=owm_api_key)
                 r = requests.get(url)
                 if r.status_code == 200:
                     data = r.json()
@@ -248,6 +267,9 @@ def update_history(city_id):
                     db.commit()
                     hour -= 360
                     continue
+                else:
+                    error = 'failed to connect to Open Weather API'
+
             dbtimestamp = timestamps[t]['lastupdate_value']
             if dbtimestamp in range(hour, hour + 360):
                 hour -= 360
@@ -264,7 +286,7 @@ def update_history(city_id):
             if dbtimestamp < hour:
                 #missing data
                 url = 'https://api.openweathermap.org/data/2.5/onecall/timemachine?lat={lat}&lon={lon}&dt={time}&appid={key}'.format(
-                    lat=latitude, lon=longitude, time=hour, key=os.environ.get("OPENWEATHER_API_KEY"))
+                    lat=latitude, lon=longitude, time=hour, key=owm_api_key)
                 r = requests.get(url)
                 if r.status_code == 200:
                     data = r.json()
@@ -299,29 +321,31 @@ def update_history(city_id):
                     db.commit()
                     hour -= 360
                 else:
-                    error = 'error connecting to clean weather api'
+                    error = 'failed to connect to Open Weather API'
                     break
     return error
 
 
-@bp.route('/weather/<int:id>/current', methods=('GET', 'POST'))
-def current_weather(id):
-    print(update_current_weather(id))
-    #update_historical(id)
+#Routes
 
+# adds the current weather forcast to owm_current_weather for given city
+@bp.route('/weather/<int:city_id>/current', methods=('GET', 'POST'))
+def current_weather(city_id):
+    error = None
+    error = update_current_weather(city_id)
     db = get_db()
-
     data = db.execute(
         'SELECT *, datetime(timestamp, "unixepoch") timestamp_f, datetime(lastupdate_value, "unixepoch") lastupdate_value_f'
         ' FROM owm_cities c'
         ' JOIN owm_current_weather w ON c.city_id = w.city_id'
         ' ORDER BY lastupdate_value DESC'
     ).fetchall()
+
     return render_template('weather/currentweather.html', data=data)
 
-@bp.route('/weather/<int:id>/forecast', methods=('GET', 'POST'))
-def current_forecast(id):
-    print(update_forcast_3h(id))
+@bp.route('/weather/<int:city_id>/forecast', methods=('GET', 'POST'))
+def current_forecast(city_id):
+    print(update_forcast_3h(city_id))
     db = get_db()
     data = db.execute(
         'SELECT *, datetime(forecast_timestamp, "unixepoch") forecast_timestamp_f,'
@@ -329,18 +353,20 @@ def current_forecast(id):
         'datetime(request_timestamp, "unixepoch") request_timestamp_f'
         ' FROM owm_cities c'
         ' JOIN owm_hourly_weather_forecast w ON c.city_id = w.city_id'
-        ' ORDER BY forecast_timestamp ASC'
+        ' WHERE c.city_id = ?'
+        ' ORDER BY forecast_timestamp ASC', (city_id,)
     ).fetchall()
     return render_template('weather/currentforecast.html', data=data)
 
-@bp.route('/weather/<int:id>/current/dump', methods=('GET', 'POST'))
-def current_weather_dump(id):
+@bp.route('/weather/<int:city_id>/current/dump', methods=('GET', 'POST'))
+def current_weather_dump(city_id):
     db = get_db()
     data = db.execute(
         'SELECT *'
-        ' FROM owm_cities c'
-        ' JOIN owm_current_weather w ON c.city_id = w.city_id'
-        ' ORDER BY timestamp DESC'
+        ' FROM owm_cities c'        
+        ' JOIN owm_current_weather w ON c.city_id = w.city_id'  
+        ' WHERE c.city_id = ?'
+        ' ORDER BY timestamp DESC', (city_id,)
     ).fetchall()
 
     return json.dumps( [dict(weather) for weather in data])  # CREATE JSON

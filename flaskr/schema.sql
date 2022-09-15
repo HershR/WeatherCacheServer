@@ -46,8 +46,8 @@ CREATE TABLE owm_current_weather (
 );
 
 CREATE TABLE owm_hourly_weather_forecast (
-  request_timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
-  forecast_timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
+  request_timestamp INT DEFAULT (cast(strftime('%s','now') as int)),
+  forecast_timestamp INT NOT NULL,
   city_id INTEGER NOT NULL,
   city_sun_rise INTEGER NOT NULL,
   city_sun_set INTEGER NOT NULL,
@@ -57,9 +57,9 @@ CREATE TABLE owm_hourly_weather_forecast (
   temperature_max REAL NOT NULL,
   temperature_unit TEXT DEFAULT "K", --default Kelvin
   feels_like_value REAL NOT NULL,
-  feels_like_unit REAL NOT NULL,
+  feels_like_unit TEXT DEFAULT "K",
   humidity_value INTEGER NOT NULL,
-  humidity_unit TEXT NOT NULL,
+  humidity_unit TEXT DEFAULT "%",
   pressure_value INTEGER NOT NULL,
   pressure_unit TEXT DEFAULT "hPa", --default hPa
   wind_speed_value REAL NOT NULL,

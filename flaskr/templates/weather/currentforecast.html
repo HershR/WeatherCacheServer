@@ -5,17 +5,18 @@
 {% endblock %}
 
 {% block content %}
+<h1>Current Forecast</h1>
 <h1>{{ data[0]['city_name'] }}, {{ data[0]['city_country'] }}</h1>
   {% for d in data %}
     <article class="weather data">
       <header>
         <div>
-          <div class="about">Last Updated: {{ d['lastupdate_value_f']}}  </div>
+          <div class="about">Date Time UTC: {{ d['forecast_timestamp_f']}}  </div>
         </div>
       </header>
       <p class="body">Temperature: {{ d['temperature_value'] }}, Max Temp: {{ d['temperature_max'] }}, Min Temp: {{ d['temperature_min'] }}</p>
       <div>
-          <div class="about">Timestamp(unix): {{ d['forecast_timestamp_f']}}  </div>
+          <div class="about">Requested Time UTC: {{ d['request_timestamp_f']}}  </div>
         </div>
     </article>
     {% if not loop.last %}

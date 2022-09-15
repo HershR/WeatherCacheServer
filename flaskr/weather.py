@@ -104,31 +104,29 @@ def update_forcast_3h(city_id):
     if latitude is None or longitude is None:
         error = 'coordinated missing for city: ' + str(city_id)
 
-    url = 'http://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&cnt={count}&appid={key}'.format(lat=latitude, lon=longitude, count = 16, key=os.environ.get("OPENWEATHER_API_KEY"))
+    url = 'http://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&cnt={count}&appid={key}'.format(lat=latitude, lon=longitude, count = 15, key=os.environ.get("OPENWEATHER_API_KEY"))
     r = requests.get(url)
     if r.status_code == 200:
         data = r.json()
         for i in range(0, len(data['list'])):
-
-            db.execute(
+            cur = db.cursor()
+            '''e = db.execute(
+                "SELECT forecast_timestamp FROM owm_hourly_weather_forecast"
+                " WHERE city_id = ? AND forecast_timestamp = ? ",
+                (city_id, data['list'][i]['dt'])
+            ).fetchone()
+            if e is not None:
+                print('should have updated')'''
+            cur.execute(
                 "UPDATE owm_hourly_weather_forecast"
-                " SET request_timestamp, forecast_timestamp = ?, lastupdate_value = ?,"
-                "temperature_value = ?, temperature_min  = ?, temperature_max  = ?, feels_like_value  = ?,"
+                " SET request_timestamp = ?, lastupdate_value = ?,"
+                "temperature_value = ?, temperature_min = ?, temperature_max = ?, feels_like_value = ?,"
                 "humidity_value = ?, pressure_value = ?,"
-                "wind_speed_value = ? , wind_speed_name = ?, wind_direction_value = ?, wind_direction_code = ?, wind_direction_name = ?,"
+                "wind_speed_value = ?, wind_speed_name = ?, wind_direction_value = ?, wind_direction_code = ?, wind_direction_name = ?,"
                 "clouds_value = ?, clouds_name = ?, visibility_value = ?, precipitation_value = ?,"
                 "weather_number = ?, weather_value = ?, weather_icon = ?"
-                " WHERE city_id = ? AND forecast_timestamp = ? "
-                " VALUES ("
-                "unixepoch(), ? , ?,"
-                "? , ? , ? , ? ,"                
-                "? , ? ,"
-                "? , ? , ? , ? , ?,"
-                "? , ? , ? , ? ,"
-                "? , ? , ?,"
-                "? , ?)",
-                (
-                 data['list'][i]['dt'], data['list'][i]['dt'],
+                " WHERE city_id = ? AND forecast_timestamp = ? ",
+                (int(datetime.datetime.now(timezone.utc).timestamp()), data['list'][i]['dt'],
                  data['list'][i]['main']['temp'], data['list'][i]['main']['temp_min'], data['list'][i]['main']['temp_max'], data['list'][i]['main']['feels_like'],
                  data['list'][i]['main']['humidity'], data['list'][i]['main']['pressure'],
                  data['list'][i]['wind']['speed'], data['list'][i]['wind']['speed'], data['list'][i]['wind']['deg'], data['list'][i]['wind']['deg'], data['list'][i]['wind']['deg'],
@@ -137,34 +135,43 @@ def update_forcast_3h(city_id):
                  city_id, data['list'][i]['dt'],
                  )
             )
-            if db.cursor().rowcount != 1:
+            c = cur.rowcount
+            if c == 0:
+                #print('inserted row')
                 db.execute(
                     "INSERT INTO owm_hourly_weather_forecast"
-                    "(forecast_timestamp"
-                    "city_id, city_sun_rise, city_sun_set, timezone, lastupdate_value,"
+                    "(forecast_timestamp, lastupdate_value,"
+                    "city_id, city_sun_rise, city_sun_set, timezone, "
                     "temperature_value, temperature_min, temperature_max, feels_like_value,"
                     "humidity_value, pressure_value,"
                     "wind_speed_value, wind_speed_name, wind_direction_value, wind_direction_code, wind_direction_name,"
                     "clouds_value, clouds_name, visibility_value, precipitation_value,"
                     "weather_number, weather_value, weather_icon)"
-                    " VALUES (unixepoch(),"
-                    "? , ? , ? , ? , ?,"
+                    " VALUES (?, ?,"
+                    "? , ? , ? , ? ,"
                     "? , ? , ? , ? ,"
                     "? , ? ,"
                     "? , ? , ? , ? , ?,"
                     "? , ? , ? , ? ,"
                     "? , ? , ?)",
-                    (city_id, data['current']['sunrise'], data['current']['sunset'], data['timezone'], data['current']['dt'],
-                     data['current']['temp'], data['current']['temp_min'], data['current']['temp_max'], data['current']['feels_like'],
-                     data['current']['humidity'], data['current']['pressure'],
-                     data['current']['wind_speed'], data['current']['wind_speed'], data['current']['wind_deg'], data['current']['wind_deg'], data['current']['wind_deg'],
-                     data['current']['clouds'], data['current']['clouds'], data['current']['visibility'], data['cod'],
-                     data['current']['weather'][0]['id'], data['current']['weather'][0]['id'], data['current']['weather'][0]['icon']
+                    (data['list'][i]['dt'], data['list'][i]['dt'],
+                     city_id, data['city']['sunrise'], data['city']['sunset'], data['city']['timezone'],
+                     data['list'][i]['main']['temp'], data['list'][i]['main']['temp_min'], data['list'][i]['main']['temp_max'], data['list'][i]['main']['feels_like'],
+                     data['list'][i]['main']['humidity'], data['list'][i]['main']['pressure'],
+                     data['list'][i]['wind']['speed'], data['list'][i]['wind']['speed'], data['list'][i]['wind']['deg'], data['list'][i]['wind']['deg'], data['list'][i]['wind']['deg'],
+                     data['list'][i]['clouds']['all'], data['list'][i]['clouds']['all'], data['list'][i]['visibility'], data['list'][i]['pop'],
+                     data['list'][i]['weather'][0]['id'], data['list'][i]['weather'][0]['id'], data['list'][i]['weather'][0]['id']
                      )
                 )
+            elif c > 1:
+                error = 'duplicate rows found'
+                return error
+        db.commit()
     return error
 
-#get 5 days with hourly data
+# get 5 days with hourly data
+# note: not tested, I only have free api key
+
 def update_history(city_id):
     error = None
     db = get_db()
@@ -317,10 +324,12 @@ def current_forecast(id):
     print(update_forcast_3h(id))
     db = get_db()
     data = db.execute(
-        'SELECT *, datetime(forecast_timestamp, "unixepoch") forecast_timestamp_f, datetime(lastupdate_value, "unixepoch") lastupdate_value_f'
+        'SELECT *, datetime(forecast_timestamp, "unixepoch") forecast_timestamp_f,'
+        'datetime(lastupdate_value, "unixepoch") lastupdate_value_f,'
+        'datetime(request_timestamp, "unixepoch") request_timestamp_f'
         ' FROM owm_cities c'
         ' JOIN owm_hourly_weather_forecast w ON c.city_id = w.city_id'
-        ' ORDER BY forecast_timestamp DESC'
+        ' ORDER BY forecast_timestamp ASC'
     ).fetchall()
     return render_template('weather/currentforecast.html', data=data)
 

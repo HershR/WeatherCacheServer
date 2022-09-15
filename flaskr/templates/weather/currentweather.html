@@ -5,6 +5,7 @@
 {% endblock %}
 
 {% block content %}
+<h1>Current Weather</h1>
 <h1>{{ data[0]['city_name'] }}, {{ data[0]['city_country'] }}</h1>
   {% for d in data %}
     <article class="weather data">

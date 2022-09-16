@@ -29,6 +29,55 @@ bp = Blueprint('weather', __name__)
 # Add your own Open Weather Api Key here
 owm_api_key = os.environ.get("OPENWEATHER_API_KEY")
 
+
+# Returns the name of a given wind speed mph
+def wind_name(speed):
+    if 0 < speed < 1:
+        return 'Calm'
+    elif 1 <= speed < 4:
+        return 'Light Air'
+    elif 4 <= speed < 8:
+        return 'Light Breeze'
+    elif 8 <= speed < 13:
+        return 'Gentle Breeze'
+    elif 13 <= speed < 19:
+        return 'Moderate Breeze'
+    elif 19 <= speed < 25:
+        return 'Fresh Breeze'
+    elif 25 <= speed < 32:
+        return 'Strong Breeze'
+    elif 32 <= speed < 39:
+        return 'Near Gale'
+    elif 39 <= speed < 47:
+        return 'Gale'
+    elif 47 <= speed < 55:
+        return 'Severe Gale'
+    elif 55 <= speed < 64:
+        return 'Storm'
+    elif 64 <= speed < 73:
+        return 'Violent Storm'
+    elif speed >= 73:
+        return 'Hurricane'
+    else:
+        return 'error'
+
+
+# converts degrees to  cardinal direction name or code
+# from: https://www.campbellsci.com/blog/convert-wind-directions
+cardinal_direction_codes = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
+cardinal_direction = ["North", "North-NorthEast", "NorthEast", "East-NorthEast", "East", "East-SouthEast", "SouthEast", "South-SouthEast",
+                      "South", "South-SouthWest", "SouthWest", "West-SouthWest", "West", "West-NorthWest", "NorthWest", "North-NorthWest", "North"]
+def wind_direction_name(degree, code = False):
+
+    if degree > 360:
+        degree = degree % 360
+    index = int((degree/22.5)+.5)
+    if code:
+        return cardinal_direction_codes[index % 16]
+    else:
+        return cardinal_direction[index % 16]
+
+
 # will get update owm_current_weather table
 # with the current weather forecast for a given city
 # able to call with free api key
@@ -88,9 +137,9 @@ def update_current_weather(city_id):
                     (city_id, data['sys']['sunrise'], data['sys']['sunset'], data['timezone'], data['dt'],
                      data['main']['temp'], data['main']['temp_min'], data['main']['temp_max'], data['main']['feels_like'],
                      data['main']['humidity'], data['main']['pressure'],
-                     data['wind']['speed'], data['wind']['speed'], data['wind']['deg'], data['wind']['deg'], data['wind']['deg'],
+                     data['wind']['speed'], wind_name(data['wind']['speed']), data['wind']['deg'], wind_direction_name(data['wind']['deg'], True), wind_direction_name(data['wind']['deg']),
                      data['clouds']['all'], data['clouds']['all'], data['visibility'], data['cod'],
-                     data['id'], data['id'], data['id']
+                     data['weather'][0]['id'], data['weather'][0]['main'], data['weather'][0]['icon']
                      )
                 )
                 db.commit()
@@ -146,9 +195,9 @@ def update_forcast_3h(city_id):
                 (int(datetime.datetime.now(timezone.utc).timestamp()), data['list'][i]['dt'],
                  data['list'][i]['main']['temp'], data['list'][i]['main']['temp_min'], data['list'][i]['main']['temp_max'], data['list'][i]['main']['feels_like'],
                  data['list'][i]['main']['humidity'], data['list'][i]['main']['pressure'],
-                 data['list'][i]['wind']['speed'], data['list'][i]['wind']['speed'], data['list'][i]['wind']['deg'], data['list'][i]['wind']['deg'], data['list'][i]['wind']['deg'],
+                 data['list'][i]['wind']['speed'], wind_name(data['list'][i]['wind']['speed']), data['list'][i]['wind']['deg'], wind_direction_name(data['list'][i]['wind']['deg'], True), wind_direction_name(data['list'][i]['wind']['deg']),
                  data['list'][i]['clouds']['all'], data['list'][i]['clouds']['all'], data['list'][i]['visibility'], data['list'][i]['pop'],
-                 data['list'][i]['weather'][0]['id'], data['list'][i]['weather'][0]['id'], data['list'][i]['weather'][0]['id'],
+                 data['list'][i]['weather'][0]['id'], data['list'][i]['weather'][0]['main'], data['list'][i]['weather'][0]['icon'],
                  city_id, data['list'][i]['dt'],
                  )
             )
@@ -175,9 +224,9 @@ def update_forcast_3h(city_id):
                      city_id, data['city']['sunrise'], data['city']['sunset'], data['city']['timezone'],
                      data['list'][i]['main']['temp'], data['list'][i]['main']['temp_min'], data['list'][i]['main']['temp_max'], data['list'][i]['main']['feels_like'],
                      data['list'][i]['main']['humidity'], data['list'][i]['main']['pressure'],
-                     data['list'][i]['wind']['speed'], data['list'][i]['wind']['speed'], data['list'][i]['wind']['deg'], data['list'][i]['wind']['deg'], data['list'][i]['wind']['deg'],
+                     data['list'][i]['wind']['speed'], wind_name(data['list'][i]['wind']['speed']), data['list'][i]['wind']['deg'], wind_direction_name(data['list'][i]['wind']['deg'], True), wind_direction_name(data['list'][i]['wind']['deg']),
                      data['list'][i]['clouds']['all'], data['list'][i]['clouds']['all'], data['list'][i]['visibility'], data['list'][i]['pop'],
-                     data['list'][i]['weather'][0]['id'], data['list'][i]['weather'][0]['id'], data['list'][i]['weather'][0]['id']
+                     data['list'][i]['weather'][0]['id'], data['list'][i]['weather'][0]['main'], data['list'][i]['weather'][0]['icon']
                      )
                 )
             elif c > 1:
@@ -258,10 +307,8 @@ def update_history(city_id):
                          data['current']['wind_speed'], data['current']['wind_speed'], data['current']['wind_deg'],
                          data['current']['wind_deg'],
                          data['current']['wind_deg'],
-                         data['current']['clouds'], data['current']['clouds'], data['current']['visibility'],
-                         data['cod'],
-                         data['current']['weather'][0]['id'], data['current']['weather'][0]['id'],
-                         data['current']['weather'][0]['icon']
+                         data['current']['clouds'], data['current']['clouds'], data['current']['visibility'], data['hourly']['pop'],
+                         data['current']['weather'][0]['id'], data['current']['weather'][0]['main'], data['current']['weather'][0]['icon']
                          )
                     )
                     db.commit()
@@ -304,18 +351,12 @@ def update_history(city_id):
                         "? , ? , ? , ? , ?,"
                         "? , ? , ? , ? ,"
                         "? , ? , ?)",
-                        (city_id, data['current']['sunrise'], data['current']['sunset'], data['timezone'],
-                         data['current']['dt'],
-                         data['current']['temp'], data['current']['temp_min'], data['current']['temp_max'],
-                         data['current']['feels_like'],
+                        (city_id, data['current']['sunrise'], data['current']['sunset'], data['timezone'], data['current']['dt'],
+                         data['current']['temp'], data['current']['temp_min'], data['current']['temp_max'], data['current']['feels_like'],
                          data['current']['humidity'], data['current']['pressure'],
-                         data['current']['wind_speed'], data['current']['wind_speed'], data['current']['wind_deg'],
-                         data['current']['wind_deg'],
-                         data['current']['wind_deg'],
-                         data['current']['clouds'], data['current']['clouds'], data['current']['visibility'],
-                         data['cod'],
-                         data['current']['weather'][0]['id'], data['current']['weather'][0]['id'],
-                         data['current']['weather'][0]['icon']
+                         data['current']['wind_speed'], wind_name(['current']['wind_speed']), data['current']['wind_deg'], wind_direction_name(['current']['wind_deg'], True), wind_direction_name(['current']['wind_deg']),
+                         data['current']['clouds'], data['current']['clouds'], data['current']['visibility'], data['hourly']['pop'],
+                         data['current']['weather'][0]['id'], data['current']['weather'][0]['id'], data['current']['weather'][0]['icon']
                          )
                     )
                     db.commit()

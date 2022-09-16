@@ -45,7 +45,7 @@ def search_by_coordinates():
         coord = []
         latitude = None
         longitude = None
-
+        db = get_db()
         if not coordinate:
             error = 'Enter Coordinates'
         elif ',' not in coordinate:
@@ -55,40 +55,38 @@ def search_by_coordinates():
         if len(coord) != 2:
             error = 'Check format'
         else:
-            print(coord)
+            #print(coord)
             latitude = coord[0]
             longitude = coord[1]
             if not latitude:
                 error = 'Latitude is required.'
-
             if not longitude:
                 error = 'Longitude is required.'
         if error is not None:
             flash(error)
         else:
-
-            # cities is a list of tuples
-            # cities = reg.ids_for(name, country=country, state=state, matching='exact')
-
-            # use geocoding api to find all cities, only returns a max of 5
             url = "https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={key}".format(lat=latitude, lon=longitude, key=os.environ.get("OPENWEATHER_API_KEY"))
             r = requests.get(url)
 
             if r.status_code != 200:
                 error = 'Request failed'
-                print(latitude)
-                print(longitude)
             else:
                 data = r.json()
-                db = get_db()
-                db.execute(
-                    'INSERT INTO owm_cities (city_id, city_name, city_coord_long, city_coord_lat, city_country)'
-                    ' VALUES (?, ?, ?, ?, ?)',
-                    (data['id'], data['name'], data['coord']['lon'],data['coord']['lat'], data['sys']['country'])
-                )
-                db.commit()
-                update_current_weather(data['id'])
-                return redirect(url_for('cityTable.index'))
+                c = db.execute('SELECT * FROM owm_cities '
+                               'WHERE city_coord_lat LIKE ? AND city_coord_long LIKE ?',
+                               (data['coord']['lat'], data['coord']['lon'],)
+                               ).fetchone()
+                if c is not None:
+                    error = 'City already being tracked'
+                else:
+                    db.execute(
+                        'INSERT INTO owm_cities (city_id, city_name, city_coord_long, city_coord_lat, city_country)'
+                        ' VALUES (?, ?, ?, ?, ?)',
+                        (data['id'], data['name'], data['coord']['lon'], data['coord']['lat'], data['sys']['country'])
+                    )
+                    db.commit()
+                    update_current_weather(data['id'])
+                    return redirect(url_for('cityTable.index'))
         if error is not None:
             flash(error)
     return render_template('cityTable/searchcoordinates.html')

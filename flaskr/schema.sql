@@ -31,15 +31,15 @@ CREATE TABLE owm_current_weather (
   wind_speed_unit TEXT DEFAULT "meter/sec", --default meter/sec
   wind_speed_name TEXT NOT NULL, --
   wind_direction_value INTEGER NOT NULL,
-  wind_direction_code INTEGER NOT NULL,
+  wind_direction_code TEXT NOT NULL,
   wind_direction_name TEXT NOT NULL,
   clouds_value REAL NOT NULL,
-  clouds_name TEXT NOT NULL,
+  clouds_name TEXT NOT NULL, --
   visibility_value INTEGER NOT NULL,
   precipitation_value INTEGER NOT NULL,
   precipitation_mode TEXT DEFAULT "%", -- default "%"
   weather_number INTEGER NOT NULL,
-  weather_value INTEGER NOT NULL,
+  weather_value TEXT NOT NULL,
   weather_icon TEXT NOT NULL,
   lastupdate_value INT NOT NULL,
   FOREIGN KEY (city_id) REFERENCES owm_cities (city_id)
@@ -66,7 +66,7 @@ CREATE TABLE owm_hourly_weather_forecast (
   wind_speed_unit TEXT DEFAULT "meter/sec", --default meter/sec
   wind_speed_name TEXT NOT NULL, --
   wind_direction_value INTEGER NOT NULL,
-  wind_direction_code INTEGER NOT NULL,
+  wind_direction_code TEXT NOT NULL,
   wind_direction_name TEXT NOT NULL,
   clouds_value REAL NOT NULL,
   clouds_name TEXT NOT NULL,

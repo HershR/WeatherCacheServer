@@ -63,7 +63,8 @@ def wind_name(speed):
 
 
 # converts degrees to  cardinal direction name or code
-# from: https://www.campbellsci.com/blog/convert-wind-directions
+# for code set second parameter to True
+# from: https://stackoverflow.com/questions/7490660/converting-wind-direction-in-angles-to-text-words
 cardinal_direction_codes = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
 cardinal_direction = ["North", "North-NorthEast", "NorthEast", "East-NorthEast", "East", "East-SouthEast", "SouthEast", "South-SouthEast",
                       "South", "South-SouthWest", "SouthWest", "West-SouthWest", "West", "West-NorthWest", "NorthWest", "North-NorthWest", "North"]
@@ -94,61 +95,44 @@ def update_current_weather(city_id):
     else:
         latitude = city['city_coord_lat']
         longitude = city['city_coord_long']
-        dt = datetime.datetime.now(timezone.utc)
-        timestamp = int(dt.timestamp())
-        timestamp = int(timestamp//360 * 360)  # floor to hour
 
-        #print('dt: '+ str(dt))
-        #print('timestamp: ' + str(timestamp) + ' -> '+ str(timestamp+360))
+        url = "https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={key}".format(lat=latitude, lon=longitude, key=owm_api_key)
+        r = requests.get(url)
+        if r.status_code == 200:
+            data = r.json()
 
-        # check if city's current weather has
-        # already been updated this hour
-        updated = db.execute(
-            'SELECT timestamp FROM owm_current_weather'
-            ' WHERE city_id = ? AND timestamp BETWEEN ? AND ?',
-            (city_id, timestamp, (timestamp+360),)
-        ).fetchone()
-        if updated is not None:
-            #city has already been updated for current hour
-            return
+            # some data is unavailable in api call, ex wind_speed name, clouds
+            # will update incorrect fields at later time
+            #pprint(data)
+            db.execute(
+                "INSERT INTO owm_current_weather "
+                "(city_id, city_sun_rise, city_sun_set, timezone, lastupdate_value,"
+                "temperature_value, temperature_min, temperature_max, feels_like_value,"
+                "humidity_value, pressure_value,"
+                "wind_speed_value, wind_speed_name, wind_direction_value, wind_direction_code, wind_direction_name,"
+                "clouds_value, clouds_name, visibility_value, precipitation_value,"
+                "weather_number, weather_value, weather_icon)"
+                "VALUES (? , ? , ? , ? , ?,"
+                "? , ? , ? , ? ,"
+                "? , ? ,"
+                "? , ? , ? , ? , ?,"
+                "? , ? , ? , ? ,"
+                "? , ? , ?)",
+                (city_id, data['sys']['sunrise'], data['sys']['sunset'], data['timezone'], data['dt'],
+                 data['main']['temp'], data['main']['temp_min'], data['main']['temp_max'], data['main']['feels_like'],
+                 data['main']['humidity'], data['main']['pressure'],
+                 data['wind']['speed'], wind_name(data['wind']['speed']), data['wind']['deg'], wind_direction_name(data['wind']['deg'], True), wind_direction_name(data['wind']['deg']),
+                 data['clouds']['all'], data['clouds']['all'], data['visibility'], data['cod'],
+                 data['weather'][0]['id'], data['weather'][0]['main'], data['weather'][0]['icon']
+                 )
+            )
+            db.commit()
         else:
-            url = "https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={key}".format(lat=latitude, lon=longitude, key=owm_api_key)
-            r = requests.get(url)
-            if r.status_code == 200:
-                data = r.json()
-
-                # some data is unavailable in api call, ex wind_speed name, clouds
-                # will update incorrect fields at later time
-                #pprint(data)
-                db.execute(
-                    "INSERT INTO owm_current_weather "
-                    "(city_id, city_sun_rise, city_sun_set, timezone, lastupdate_value,"
-                    "temperature_value, temperature_min, temperature_max, feels_like_value,"
-                    "humidity_value, pressure_value,"
-                    "wind_speed_value, wind_speed_name, wind_direction_value, wind_direction_code, wind_direction_name,"
-                    "clouds_value, clouds_name, visibility_value, precipitation_value,"
-                    "weather_number, weather_value, weather_icon)"
-                    "VALUES (? , ? , ? , ? , ?,"
-                    "? , ? , ? , ? ,"
-                    "? , ? ,"
-                    "? , ? , ? , ? , ?,"
-                    "? , ? , ? , ? ,"
-                    "? , ? , ?)",
-                    (city_id, data['sys']['sunrise'], data['sys']['sunset'], data['timezone'], data['dt'],
-                     data['main']['temp'], data['main']['temp_min'], data['main']['temp_max'], data['main']['feels_like'],
-                     data['main']['humidity'], data['main']['pressure'],
-                     data['wind']['speed'], wind_name(data['wind']['speed']), data['wind']['deg'], wind_direction_name(data['wind']['deg'], True), wind_direction_name(data['wind']['deg']),
-                     data['clouds']['all'], data['clouds']['all'], data['visibility'], data['cod'],
-                     data['weather'][0]['id'], data['weather'][0]['main'], data['weather'][0]['icon']
-                     )
-                )
-                db.commit()
-            else:
-                error = 'failed to connect to Open Weather API'
+            error = 'failed to connect to Open Weather API'
     return error
 
 
-# get today and tomorrow's forcast
+# tomorrow's forcast
 # free api key allows for only 3 hour interval
 def update_forcast_3h(city_id):
     error = None
@@ -170,7 +154,7 @@ def update_forcast_3h(city_id):
     if latitude is None or longitude is None:
         error = 'coordinated missing for city: ' + str(city_id)
 
-    url = 'http://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&cnt={count}&appid={key}'.format(lat=latitude, lon=longitude, count = 15, key=owm_api_key)
+    url = 'http://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&cnt={count}&appid={key}'.format(lat=latitude, lon=longitude, count = 7, key=owm_api_key)
     r = requests.get(url)
     if r.status_code == 200:
         data = r.json()

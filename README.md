@@ -6,7 +6,7 @@
  
 ## Current features
 - Get and store current forecast
-- Get and store forecast for the next days in 3h intervals
+- Get and store forecast for the next day in 3h intervals
 - Get and store historical weather data up to five days into the past in 1h intervals **(not tested)**
 - Get and store forecast for the next days in 1h intervals **(not tested)**
 

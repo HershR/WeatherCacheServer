@@ -67,7 +67,7 @@ def wind_name(speed):
 # from: https://stackoverflow.com/questions/7490660/converting-wind-direction-in-angles-to-text-words
 cardinal_direction_codes = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
 cardinal_direction = ["North", "North-NorthEast", "NorthEast", "East-NorthEast", "East", "East-SouthEast", "SouthEast", "South-SouthEast",
-                      "South", "South-SouthWest", "SouthWest", "West-SouthWest", "West", "West-NorthWest", "NorthWest", "North-NorthWest", "North"]
+                      "South", "South-SouthWest", "SouthWest", "West-SouthWest", "West", "West-NorthWest", "NorthWest", "North-NorthWest"]
 def wind_direction_name(degree, code = False):
 
     if degree > 360:
@@ -79,8 +79,8 @@ def wind_direction_name(degree, code = False):
         return cardinal_direction[index % 16]
 
 
-# will get update owm_current_weather table
-# with the current weather forecast for a given city
+# will get the current weather for a given city
+# and updated owm_current_weather with the data
 # able to call with free api key
 def update_current_weather(city_id):
     db = get_db()
@@ -131,11 +131,17 @@ def update_current_weather(city_id):
             error = 'failed to connect to Open Weather API'
     return error
 
-
-# tomorrow's forcast
-# free api key allows for only 3 hour interval
-def update_forcast_3h(city_id):
+# will get the forcast for the next x days, max 5, in 3h intervals
+# (starts at the next day at 03:00:00 UTC)
+# then updates owm_hourly_weather_forecast with data
+# by default only gets tomorrow's forecast
+# works with free api key
+def update_forcast_3h(city_id, days = 1):
     error = None
+    if days < 1:
+        days = 1
+    if days > 5:
+        days = 5
     db = get_db()
     coords = db.execute(
         'SELECT city_coord_long, city_coord_lat'
@@ -154,7 +160,7 @@ def update_forcast_3h(city_id):
     if latitude is None or longitude is None:
         error = 'coordinated missing for city: ' + str(city_id)
 
-    url = 'http://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&cnt={count}&appid={key}'.format(lat=latitude, lon=longitude, count = 7, key=owm_api_key)
+    url = 'http://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&cnt={count}&appid={key}'.format(lat=latitude, lon=longitude, count=((8 * days)-1), key=owm_api_key)
     r = requests.get(url)
     if r.status_code == 200:
         data = r.json()
@@ -221,8 +227,10 @@ def update_forcast_3h(city_id):
         error = 'failed to connect to Open Weather API'
     return error
 
-# get 5 days with hourly data
-# note: not tested, I only have free api key
+# will get check owm_current_weather table for missing data
+# and updated the table with historical hourly weather data
+# up to five days prior#
+# note: not tested, requires paid API key
 
 def update_history(city_id):
     error = None
@@ -392,6 +400,20 @@ def current_weather_dump(city_id):
         ' JOIN owm_current_weather w ON c.city_id = w.city_id'  
         ' WHERE c.city_id = ?'
         ' ORDER BY timestamp DESC', (city_id,)
+    ).fetchall()
+
+    return json.dumps( [dict(weather) for weather in data])  # CREATE JSON
+
+@bp.route('/weather/<int:city_id>/forecast/dump', methods=('GET', 'POST'))
+def forecast_dump(city_id):
+    update_forcast_3h(city_id)
+    db = get_db()
+    data = db.execute(
+        'SELECT *'
+        ' FROM owm_cities c'        
+        ' JOIN owm_hourly_weather_forecast w ON c.city_id = w.city_id'  
+        ' WHERE c.city_id = ?'
+        ' ORDER BY forecast_timestamp ASC', (city_id,)
     ).fetchall()
 
     return json.dumps( [dict(weather) for weather in data])  # CREATE JSON

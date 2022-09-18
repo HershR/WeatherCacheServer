@@ -1,4 +1,6 @@
 
+# not tested nor updated to work with schema
+
 import os
 import requests
 import datetime

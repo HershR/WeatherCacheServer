@@ -147,6 +147,7 @@ def update_forcast_3h(city_id, days=1):
         days = 1
     if days > 5:
         days = 5
+    timestamps = days*8 # number of timestamps to recieve from api call
     db = get_db()
     # check is city is being tracked
     coords = db.execute(
@@ -166,12 +167,12 @@ def update_forcast_3h(city_id, days=1):
             error = 'coordinates missing for city: ' + str(city_id)
 
     if error is None:
-        url = 'http://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&units=metric&cnt={count}&appid={key}&mode=xml'.format(lat=latitude, lon=longitude, count=((8 * days)-1), key=owm_api_key)
+        url = 'http://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&units=metric&cnt={count}&appid={key}&mode=xml'.format(lat=latitude, lon=longitude, count=timestamps, key=owm_api_key)
         r = requests.get(url)
         if r.status_code == 200:
             # convert to dictionary
             data = xmltodict.parse(r.content, attr_prefix="")['weatherdata']
-            for i in range(0, ((8 * days)-1)):
+            for i in range(0, timestamps):
                 exist = None
                 exist = db.execute(
                     'SELECT c.city_id'
@@ -225,7 +226,7 @@ def current_weather(city_id):
             'SELECT *, datetime(timestamp, "unixepoch") timestamp_f, datetime(lastupdate_value, "unixepoch") lastupdate_value_f'
             ' FROM owm_cities c'
             ' JOIN owm_current_weather w ON c.city_id = w.city_id'
-            ' ORDER BY lastupdate_value DESC'
+            ' ORDER BY timestamp ASC'
         ).fetchall()
         return render_template('weather/currentweather.html', data=data)
     else:

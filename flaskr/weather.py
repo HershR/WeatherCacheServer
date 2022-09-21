@@ -129,7 +129,9 @@ def update_current_weather(city_id):
                  data['temperature']['value'], data['temperature']['min'], data['temperature']['max'], data['temperature']['unit'],
                  data['feels_like']['value'], data['feels_like']['unit'], data['humidity']['value'], data['pressure']['value'],
                  data['wind']['speed']['value'], data['wind']['speed']['name'], data['wind']['direction']['value'], data['wind']['direction']['code'], data['wind']['direction']['name'],
-                 data['clouds']['value'], data['clouds']['name'], data['visibility']['value'], 0 if 'value' not in data['precipitation'] else data['precipitation']['value'], data['precipitation']['mode'],
+                 data['clouds']['value'], data['clouds']['name'], data['visibility']['value'],
+                  0 if 'value' not in data['precipitation'] else data['precipitation']['value'],
+                 'No' if 'mode' not in data['precipitation'] else data['precipitation']['mode'],
                  data['weather']['number'], data['weather']['value'], data['weather']['icon'],
                  )
             )

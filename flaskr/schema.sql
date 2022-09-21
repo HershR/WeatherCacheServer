@@ -72,7 +72,7 @@ CREATE TABLE owm_hourly_weather_forecast (
   clouds_value_pct REAL NOT NULL, --Cloudiness %
   clouds_name TEXT DEFAULT "None",
   visibility_value_m INTEGER NOT NULL, -- in meters
-  precipitation_value_mm REAL NOT NULL, --rain volume in millimeters
+  precipitation_value_mm REAL NOT NULL DEFAULT 0, --rain volume in millimeters
   precipitation_mode TEXT NOT NULL DEFAULT "no", -- no or rain or snow
   weather_number INTEGER NOT NULL,
   weather_value TEXT NOT NULL,

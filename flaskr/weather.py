@@ -109,7 +109,7 @@ def update_current_weather(city_id):
         r = requests.get(url)
         if r.status_code == 200:
             #convert to dictionary
-            data = xmltodict.parse(r.content, attr_prefix="")
+            data = xmltodict.parse(r.content, attr_prefix="")['current']
             # insert data into owm_current_weather
             db.execute(
                 "INSERT INTO owm_current_weather "
@@ -125,12 +125,12 @@ def update_current_weather(city_id):
                 "? , ? , ? , ? , ?,"
                 "? , ?, ? , ? , ?,"
                 "? , ? , ? )",
-                (city_id, data['current']['city']['sun']['rise'], data['current']['city']['sun']['set'], data['current']['city']['timezone'], data['current']['lastupdate']['value'],
-                 data['current']['temperature']['value'], data['current']['temperature']['min'], data['current']['temperature']['max'], data['current']['temperature']['unit'],
-                 data['current']['feels_like']['value'], data['current']['feels_like']['unit'], data['current']['humidity']['value'], data['current']['pressure']['value'],
-                 data['current']['wind']['speed']['value'], data['current']['wind']['speed']['name'], data['current']['wind']['direction']['value'], data['current']['wind']['direction']['code'], data['current']['wind']['direction']['name'],
-                 data['current']['clouds']['value'], data['current']['clouds']['name'], data['current']['visibility']['value'], 0 if 'value' not in data['current']['precipitation'] else data['current']['precipitation']['value'], data['current']['precipitation']['mode'],
-                 data['current']['weather']['number'], data['current']['weather']['value'], data['current']['weather']['icon'],
+                (city_id, data['city']['sun']['rise'], data['city']['sun']['set'], data['city']['timezone'], data['lastupdate']['value'],
+                 data['temperature']['value'], data['temperature']['min'], data['temperature']['max'], data['temperature']['unit'],
+                 data['feels_like']['value'], data['feels_like']['unit'], data['humidity']['value'], data['pressure']['value'],
+                 data['wind']['speed']['value'], data['wind']['speed']['name'], data['wind']['direction']['value'], data['wind']['direction']['code'], data['wind']['direction']['name'],
+                 data['clouds']['value'], data['clouds']['name'], data['visibility']['value'], 0 if 'value' not in data['precipitation'] else data['precipitation']['value'], data['precipitation']['mode'],
+                 data['weather']['number'], data['weather']['value'], data['weather']['icon'],
                  )
             )
             db.commit()
@@ -204,7 +204,9 @@ def update_forcast_3h(city_id, days=1):
                      data['forecast']['time'][i]['temperature']['value'], data['forecast']['time'][i]['temperature']['min'], data['forecast']['time'][i]['temperature']['max'], data['forecast']['time'][i]['temperature']['unit'],
                      data['forecast']['time'][i]['feels_like']['value'], data['forecast']['time'][i]['feels_like']['unit'], data['forecast']['time'][i]['humidity']['value'], data['forecast']['time'][i]['pressure']['value'],
                      data['forecast']['time'][i]['windSpeed']['mps'], data['forecast']['time'][i]['windSpeed']['name'], data['forecast']['time'][i]['windDirection']['deg'], data['forecast']['time'][i]['windDirection']['code'], data['forecast']['time'][i]['windDirection']['name'],
-                     data['forecast']['time'][i]['clouds']['all'], data['forecast']['time'][i]['clouds']['value'], data['forecast']['time'][i]['visibility']['value'], 0 if 'value' not in data['forecast']['time'][i]['precipitation'] else data['forecast']['time'][i]['precipitation']['value'], data['forecast']['time'][i]['precipitation']['type'],
+                     data['forecast']['time'][i]['clouds']['all'], data['forecast']['time'][i]['clouds']['value'], data['forecast']['time'][i]['visibility']['value'],
+                      0 if 'value' not in data['forecast']['time'][i]['precipitation'] else data['forecast']['time'][i]['precipitation']['value'],
+                     'No' if 'type' not in data['forecast']['time'][i]['precipitation'] else data['forecast']['time'][i]['precipitation']['type'],
                      data['forecast']['time'][i]['symbol']['number'], data['forecast']['time'][i]['symbol']['name'], data['forecast']['time'][i]['symbol']['var'],
                      )
                 )
@@ -226,7 +228,8 @@ def current_weather(city_id):
             'SELECT *, datetime(timestamp, "unixepoch") timestamp_f, datetime(lastupdate_value, "unixepoch") lastupdate_value_f'
             ' FROM owm_cities c'
             ' JOIN owm_current_weather w ON c.city_id = w.city_id'
-            ' ORDER BY timestamp ASC'
+            ' WHERE c.city_id = ?'
+            ' ORDER BY timestamp ASC', (city_id,)
         ).fetchall()
         return render_template('weather/currentweather.html', data=data)
     else:

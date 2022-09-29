@@ -10,7 +10,7 @@
     <input name="coordinate" id="coordinate" required>
     <input type="submit" value="Submit">
   </form>
-  <form action="{{ url_for('cityTable.search_by_coordinates') }}" method="get">
+  <form action="{{ url_for('cities.search_by_coordinates') }}" method="get">
     <input class="return" type="submit" value="Cancel">
   </form>
 {% endblock %}

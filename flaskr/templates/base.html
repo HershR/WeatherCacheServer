@@ -1,5 +1,5 @@
 <!doctype html>
-<title>{% block title %}{% endblock %} - PointTracker</title>
+<title>{% block title %}{% endblock %} - Weather Server</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <nav>
   <h1>Weather Cache Server</h1>
@@ -9,6 +9,6 @@
     <div class="flash">{{ message }}</div>
   {% endfor %}
   {% block content %}{% endblock %}
-  <a class="action" href="{{ url_for('cityTable.index') }}"> Home</a>
+  <a class="action" href="{{ url_for('cities.index') }}"> Home</a>
 
 </section>

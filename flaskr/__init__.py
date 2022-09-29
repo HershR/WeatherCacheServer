@@ -1,16 +1,17 @@
 import os
 
 from flask import Flask
+from flaskr.database import db, migrate
 
 
 def create_app(test_config=None):
     # create and configure the app
-    app = Flask(__name__, instance_relative_config=True)
+    app = Flask(__name__)
     app.config.from_mapping(
-        SECRET_KEY='dev',
-        DATABASE=os.path.join(app.instance_path, 'flaskr.sqlite'),
+        SECRET_KEY='dev',  # todo add key here
+        SQLALCHEMY_DATABASE_URI=os.environ.get("DATABASE_URL"),
+        SQLALCHEMY_TRACK_MODIFICATIONS=False
     )
-
 
     # ensure the instance folder exists
     try:
@@ -18,19 +19,14 @@ def create_app(test_config=None):
     except OSError:
         pass
 
-    from . import db
     db.init_app(app)
+    migrate.init_app(app, db)
 
     from . import weather
     app.register_blueprint(weather.bp)
 
-    from . import cityTable
-    app.register_blueprint(cityTable.bp)
+    from . import cities
+    app.register_blueprint(cities.bp)
     app.add_url_rule('/', endpoint='index')
-
-    # a simple page that says hello
-    @app.route('/hello')
-    def hello():
-        return 'Hello, World!'
 
     return app

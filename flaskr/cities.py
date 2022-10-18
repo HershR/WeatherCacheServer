@@ -1,8 +1,8 @@
 import os
 import requests
 
-from flaskr.database import db
-from flaskr.models import OwmCities
+from .extensions import db
+from .models import OwmCities
 
 from flask import (
     Blueprint, flash, redirect, render_template, request, url_for
@@ -23,12 +23,12 @@ def index():
 @bp.route('/search/coordinates', methods=('GET', 'POST'))
 def search_by_coordinates():
     if request.method == 'POST':
-        print('postgress call')
         coordinate = str(request.form['coordinate']).replace(" ", "")
         error = None
         coord = []
         latitude = None
         longitude = None
+        #check for proper coordinate format
         if not coordinate:
             error = 'Enter Coordinates'
         elif ',' not in coordinate:
@@ -44,6 +44,7 @@ def search_by_coordinates():
                 error = 'Latitude is required.'
             if not longitude:
                 error = 'Longitude is required.'
+
         if error is None:
             url = "https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={key}".format(lat=latitude, lon=longitude, key=key)
             r = requests.get(url)

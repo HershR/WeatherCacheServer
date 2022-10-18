@@ -5,7 +5,7 @@
 # Also contains the page routes to display
 # the data in db
 # note: not all inserted field contains correct values,
-
+from flaskr import create_app
 import os
 import xmltodict
 import json
@@ -18,14 +18,21 @@ from flask import (
 )
 
 from werkzeug.exceptions import abort
-from flaskr.database import db
-from flaskr.models import OwmCities, OwmCurrentWeather, OwmHourlyWeatherForecast
+from .extensions import db, scheduler
+from .models import OwmCities, OwmCurrentWeather, OwmHourlyWeatherForecast
 
 
 bp = Blueprint('weather', __name__)
 
 # Add your own Open Weather Api Key here
 owm_api_key = os.environ.get("OPENWEATHERMAP_API_KEY")
+
+
+# fuction to return a list of city ids
+def city_ids():
+    result = OwmCities.query.with_entities(OwmCities.city_id)
+    id = [r for (r,) in result]
+    return id
 
 
 # will get the current weather for a given city
@@ -58,6 +65,7 @@ def update_current_weather(city_id):
             sunset = datetime.datetime.strptime(data['city']['sun']['set'], "%Y-%m-%dT%H:%M:%S")
             lastupdate_value = datetime.datetime.strptime(data['lastupdate']['value'], "%Y-%m-%dT%H:%M:%S")
 
+            #check for wind
             if data['wind']['direction'] is None:
                 wind_direction_value_deg = None
                 wind_direction_code = None
@@ -102,6 +110,9 @@ def update_current_weather(city_id):
     return error
 
 
+# will get the next day's forecast for a city
+# in 3h intervals
+# able to call with free api key
 def update_forcast_3h(city_id, days=1):
     # ensure days is within range
     if days < 1:
@@ -191,20 +202,19 @@ def update_forcast_3h(city_id, days=1):
 # updates the current weather to owm_current_weather for given city
 @bp.route('/weather/<int:city_id>/current', methods=('GET', 'POST'))
 def current_weather(city_id):
-    error = update_current_weather(city_id)
-    if error is None:
-        city = db.session.query(OwmCities)\
-            .filter_by(city_id=city_id)\
-            .first()
-        data = db.session.query(OwmCurrentWeather)\
-            .order_by(OwmCurrentWeather.timestamp.asc())\
-            .filter_by(city_id=city_id)\
-            .all()
+    #error = update_current_weather_all()
+    city = db.session.query(OwmCities)\
+        .filter_by(city_id=city_id)\
+        .first()
+    data = db.session.query(OwmCurrentWeather)\
+        .order_by(OwmCurrentWeather.timestamp.asc())\
+        .filter_by(city_id=city_id)\
+        .all()
 
-        if data is None:
-            error = "Unable to retrieve current weather data for city: " + str(city_id)
-        else:
-            return render_template('weather/currentweather.html', city=city, data=data)
+    if data is None:
+        error = "Unable to retrieve current weather data for city: " + str(city_id)
+    else:
+        return render_template('weather/currentweather.html', city=city, data=data)
     flash(error)
     return redirect(url_for('cities.index'))
 
@@ -212,22 +222,19 @@ def current_weather(city_id):
 # updates the current forcast to owm_hourly_weather_forecast for given city
 @bp.route('/weather/<int:city_id>/forecast', methods=('GET', 'POST'))
 def current_forecast(city_id):
-    error = update_forcast_3h(city_id)
-    if error is None:
-        city = db.session.query(OwmCities) \
-            .filter_by(city_id=city_id) \
-            .first()
-        data = db.session.query(OwmHourlyWeatherForecast)\
-            .order_by(OwmHourlyWeatherForecast.forecast_timestamp.asc())\
-            .filter_by(city_id=city_id)\
-            .all()
-        if data is None:
-            error = "Unable to retrieve current forecast data for city: " + str(city_id)
-        else:
-            return render_template('weather/currentforecast.html', city=city, data=data)
+    city = db.session.query(OwmCities) \
+        .filter_by(city_id=city_id) \
+        .first()
+    data = db.session.query(OwmHourlyWeatherForecast)\
+        .order_by(OwmHourlyWeatherForecast.forecast_timestamp.asc())\
+        .filter_by(city_id=city_id)\
+        .all()
+    if data is None:
+        error = "Unable to retrieve current forecast data for city: " + str(city_id)
     else:
-        flash(error)
-        return redirect(url_for('cities.index'))
+        return render_template('weather/currentforecast.html', city=city, data=data)
+    flash(error)
+    return redirect(url_for('cities.index'))
 
 
 #todo find reliable way to convert sqlalchemy results to json
@@ -246,6 +253,7 @@ def row2dict(row):
 @bp.route('/weather/<int:city_id>/current/dump', methods=('GET', 'POST'))
 def current_weather_dump(city_id):
 
+    #{city info, weather entries, weather data}
     weather = {"city": {}, "count": 0, "data": []}
     city = OwmCities.query.filter_by(city_id=city_id).first()
     weather["city"] = row2dict(city)
@@ -261,12 +269,12 @@ def current_weather_dump(city_id):
         entry.pop('city_id')
         weather['data'].append(entry)
     return json.dumps(weather)
-    #return json.dumps([dict(weather) for weather in data])  # CREATE JSON
 
 
 # returns all data in owm_hourly_weather_forecast for a given city as a json
 @bp.route('/weather/<int:city_id>/forecast/dump', methods=('GET', 'POST'))
 def forecast_dump(city_id):
+    # {city info, weather entries, weather data}
     weather = {"city": {}, "count": 0, "data": []}
     city = OwmCities.query.filter_by(city_id=city_id).first()
     weather["city"] = row2dict(city)
@@ -283,4 +291,3 @@ def forecast_dump(city_id):
         entry.pop('city_id')
         weather['data'].append(entry)
     return json.dumps(weather)
-    #return json.dumps([dict(weather) for weather in data])  # CREATE JSON

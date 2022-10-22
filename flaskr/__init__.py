@@ -48,7 +48,7 @@ def create_app(test_config=None):
         else:
             from . import tasks  # noqa: F401
             #todo Uncomment to Start Scheduler
-            #scheduler.start()
+            scheduler.start()
 
     from . import weather
     app.register_blueprint(weather.bp)

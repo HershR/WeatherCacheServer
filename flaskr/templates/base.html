@@ -8,7 +8,7 @@
   {% for message in get_flashed_messages() %}
     <div class="flash">{{ message }}</div>
   {% endfor %}
-  {% block content %}{% endblock %}
   <a class="action" href="{{ url_for('cities.index') }}"> Home</a>
+  {% block content %}{% endblock %}
 
 </section>

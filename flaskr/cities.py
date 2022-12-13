@@ -1,16 +1,19 @@
 import os
+
+import flask
 import requests
 
 from .extensions import db
 from .models import OwmCities
 from .weather import add_city
 from flask import (
-    Blueprint, flash, redirect, render_template, request, url_for
+    current_app, Blueprint, flash, redirect, render_template, request, url_for
 )
 
 bp = Blueprint('cities', __name__)
 
-owm_api_key = os.environ.get("OPENWEATHERMAP_API_KEY")
+owm_api_key = current_app.config['OPENWEATHERMAP_API_KEY']
+
 
 
 @bp.route('/')

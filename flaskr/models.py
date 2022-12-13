@@ -55,7 +55,7 @@ class OwmHourlyWeatherForecast(db.Model):
     __table_args__ = {'extend_existing': True}
     __tablename__ = 'owm_hourly_weather_forecast'
     id = db.Column(db.Integer, primary_key=True)
-    request_timestamp = db.Column(db.DateTime,  nullable=False, default=datetime.datetime.utcnow())
+    request_timestamp = db.Column(db.DateTime,  nullable=False, default=(datetime.datetime.utcnow()).replace(microsecond=0))
     forecast_timestamp = db.Column(db.DateTime, nullable=False)
     city_id = db.Column(db.Integer, db.ForeignKey("owm_cities.city_id"), nullable=False)
     city_sun_rise = db.Column(db.DateTime, nullable=False)

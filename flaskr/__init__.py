@@ -26,9 +26,11 @@ def create_app():
 
     with app.app_context():
         if not app.debug or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
-            from . import tasks  # noqa: F401
-            #print('start schedualr')
+            scheduler.remove_all_jobs()
             scheduler.start()
+            print('Scheduler Start')
+            from . import tasks  # noqa: F401
+            tasks.add_existing_weather_tasks()
 
         from . import weather
         app.register_blueprint(weather.bp)

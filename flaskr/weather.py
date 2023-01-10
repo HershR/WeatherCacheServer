@@ -549,14 +549,3 @@ def get_weather_by_date():
     row.pop('id')
     return json.dumps(weather | row)
 
-'--------------------------------------------------'
-'Forecast time fix'
-'If forecast time of off by 3 hour'
-@bp.route('/fix/forecast/timestamp', methods=('GET', 'POST'))
-def forecast_time_fix():
-    data = OwmHourlyWeatherForecast.query.all()
-    for row in data:
-        date = row.forecast_timestamp
-        row.forecast_timestamp = date + datetime.timedelta(hours=3)
-        db.session.commit()
-    return redirect(url_for('cities.index'))
